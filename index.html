@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <title>My Chat</title>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/public/lib/css/emoji.css" rel="stylesheet">
+    <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font: 13px Helvetica, Arial; }
+            form { padding: 3px; position: fixed; bottom: 0; width: 100%; }
+            form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+            form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+            #messages { list-style-type: none; margin: 0; padding: 0; margin-bottom: 60px; }
+            #messages li { padding: 5px 10px; }
+            .me { text-align: right; background: #eee; }
+            .important { color: red }
+            .emoji-menu { position: relative; }
+          </style>
+  </head>
+  <body>
+    <input placeholder="username" id="user" />
+    <ul id="messages">
+        <li class="important">You connected</li>
+    </ul>
+    <form action="">
+        <p class="lead emoji-picker-container">
+            <input id="m" autocomplete="off" data-emojiable="true" />
+        </p>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+    <script>
+          $(function () {
+            var socket = io();
+            $(document).keypress(e => {
+                var keycode = e.keyCode || e.which || e.key;
+                if(keycode == "13" || keycode == 13) {
+                    var msg = $("#emojiAreaInput").text();
+                    var user = $("#user").val();
+                    console.log(user);
+                    console.log(msg);
+                    if(user == "" || user == " ") {
+                        $("#messages").prepend($("<li class='important'>").text("Please enter a username"));
+                        $('#m').val('');
+                        $('#emojiAreaInput').empty();
+                    }
+                    else if(msg != "" && msg != " ") {
+                        var today = new Date();
+                        var date = today.getDate() + "." + (today.getMonth()+1)+'.'+today.getFullYear();
+                        var time = today.getHours() + ":" + today.getMinutes();
+                        var dateTime = "(" + date + ' ' + time + ")";
+                        $('#m').val('');
+                        $('#emojiAreaInput').empty();
+                        socket.emit('chat message', {msg, user, dateTime});
+                    }
+                    else {
+                        $('#m').val('');
+                        $('#emojiAreaInput').empty();
+                    }
+                }
+            })
+            socket.on("chat message", ({msg, user, dateTime}) => {
+                if(user == $("#user").val()) {
+                    $("#messages").prepend($("<li class='me'>").text(msg));
+                } else {
+                    $("#messages").prepend($("<li>").text(user + " " + dateTime + ": " + msg));
+                }
+            });
+            socket.on("connection", function(msg) {
+                $("#messages").prepend($("<li class='important'>").text(msg));
+            })
+        });
+    </script>
+    <script src="/public/lib/js/config.js"></script>
+    <script src="/public/lib/js/util.js"></script>
+    <script src="/public/lib/js/jquery.emojiarea.js"></script>
+    <script src="/public/lib/js/emoji-picker.js"></script>
+    <script>
+      $(function() {
+        // Initializes and creates emoji set from sprite sheet
+        window.emojiPicker = new EmojiPicker({
+          emojiable_selector: '[data-emojiable=true]',
+          assetsPath: '/public/lib/img/',
+          popupButtonClasses: 'fa fa-smile-o'
+        });
+        // Finds all elements with `emojiable_selector` and converts them to rich emoji input fields
+        // You may want to delay this step if you have dynamically created input fields that appear later in the loading process
+        // It can be called as many times as necessary; previously converted input fields will not be converted again
+        window.emojiPicker.discover();
+      });
+    </script>
+  </body>
+</html>
